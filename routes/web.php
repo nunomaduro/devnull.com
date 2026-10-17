@@ -26,6 +26,9 @@ use App\Http\Controllers\CommitStarCountController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FailedJobController;
 use App\Http\Controllers\FailedJobRetryController;
+use App\Http\Controllers\GitHubIssueAuthorizationController;
+use App\Http\Controllers\IssueController;
+use App\Http\Controllers\IssueImageController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\MentionController;
 use App\Http\Controllers\MentionSuggestionController;
@@ -156,6 +159,10 @@ Route::get('commits/{commit}/replies', [CommitReplyController::class, 'index'])
 Route::get('search', [SearchController::class, 'index'])
     ->name('search.index');
 
+Route::get('issue-images/{image}', [IssueImageController::class, 'show'])
+    ->where('image', '[a-f0-9-]+\.webp')
+    ->name('issue-image.show');
+
 // User Search...
 Route::get('search/users', [UserSearchController::class, 'index'])
     ->middleware('throttle:people')
@@ -167,6 +174,19 @@ Route::get('search/commits', [CommitSearchController::class, 'index'])
     ->name('commit-search.index');
 
 Route::middleware('auth')->group(function (): void {
+    Route::get('settings/github-issues/authorize', [GitHubIssueAuthorizationController::class, 'create'])
+        ->middleware('throttle:10,1')
+        ->name('github-issue-authorization.create');
+    Route::get('auth/github/issues/callback', [GitHubIssueAuthorizationController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('github-issue-authorization.store');
+    Route::delete('settings/github-issues', [GitHubIssueAuthorizationController::class, 'destroy'])
+        ->name('github-issue-authorization.destroy');
+
+    Route::post('issues', [IssueController::class, 'store'])
+        ->middleware('throttle:issues')
+        ->name('issue.store');
+
     // Session...
     Route::post('logout', [SessionController::class, 'destroy'])
         ->name('logout');

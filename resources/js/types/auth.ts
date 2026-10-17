@@ -34,6 +34,7 @@ export type Profile = User & {
 export type Auth = {
     user: Profile | null;
     isAdmin: boolean;
+    githubIssueCommandsEnabled: boolean;
     log: Log | null;
     unreadNotificationsCount: number;
     pasteis: { remaining: number; day: string } | null;
