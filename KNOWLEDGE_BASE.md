@@ -34,7 +34,7 @@ This file records the stack and the stories behind the platform. Technology name
 | Asset tooling | **Vite+ / Vite** builds frontend assets; **Bun** manages frontend dependencies and runs scripts. |
 | PHP dependencies | **Composer** manages backend dependencies. |
 | Testing and quality | **Pest**, **PHPStan / Larastan**, **TypeScript**, **Laravel Pint**, **Rector**, and frontend formatting and linting through **Vite+**. |
-| Existing AI services | **OpenAI** is used for embeddings and moderation. This is separate from Tom's planned DeepSeek role. |
+| Existing AI services | **Laravel AI SDK** generates and caches semantic search query embeddings through **OpenAI**. The existing OpenAI integration handles batch embeddings, commit relevance checks, and moderation. This is separate from Tom's planned DeepSeek role. |
 
 The repository defaults to database-backed queues, cache, and sessions. File storage is configurable, with local and S3-compatible storage supported. These are repository defaults and supported options, not a claim about every production environment setting.
 

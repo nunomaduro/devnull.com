@@ -15,6 +15,8 @@ final readonly class OpenAI
      */
     public const int EMBEDDING_DIMENSIONS = 1536;
 
+    public const string EMBEDDING_MODEL = 'text-embedding-3-small';
+
     private const string MODERATION_MODEL = 'omni-moderation-latest';
 
     private const string REVIEW_MODEL = 'gpt-6-astra';
@@ -23,8 +25,6 @@ final readonly class OpenAI
      * The efficient model, for the relevance verdict on every candidate of every search.
      */
     private const string DECISION_MODEL = 'gpt-6-luna';
-
-    private const string EMBEDDING_MODEL = 'text-embedding-3-small';
 
     /**
      * Far stricter than OpenAI's own cut-off: any category scoring this much is flagged.

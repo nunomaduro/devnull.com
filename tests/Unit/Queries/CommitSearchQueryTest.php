@@ -7,13 +7,17 @@ use App\Models\User;
 use App\Queries\CommitSearchQuery;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Embeddings;
+use Laravel\Ai\Exceptions\EmbeddingsCountMismatchException;
+use Laravel\Ai\Prompts\EmbeddingsPrompt;
 
 beforeEach(function (): void {
-    config(['services.openai.key' => 'sk-test']);
+    config(['services.openai.key' => 'sk-test', 'ai.providers.openai.key' => 'sk-test']);
 });
 
 it('returns the commits nearest in meaning, closest first', function (): void {
     fakeSearch();
+    Embeddings::fake([[embeddingVector(0)]])->preventStrayEmbeddings();
 
     $close = Commit::factory()->create(['embedding' => embeddingVector(0)]);
     $far = Commit::factory()->create(['embedding' => embeddingVector(1)]);
@@ -22,8 +26,10 @@ it('returns the commits nearest in meaning, closest first', function (): void {
 
     expect($results->pluck('id')->all())->toBe([$close->id, $far->id]);
 
-    Http::assertSent(fn (Request $request): bool => $request['model'] === 'text-embedding-3-small'
-        && $request['input'] === ['a query']);
+    Embeddings::assertGenerated(fn (EmbeddingsPrompt $prompt): bool => $prompt->inputs === ['a query']
+        && $prompt->provider->name() === 'openai'
+        && $prompt->model === 'text-embedding-3-small'
+        && $prompt->dimensions === 1536);
 });
 
 it('reads the term against the candidates with the decision model, keeping only the relevant ones', function (): void {
@@ -162,3 +168,29 @@ it('keeps every candidate when the decision model answers in a shape it cannot r
     'an answer for another post' => [['answers' => [['type' => 'predicate', 'name' => 'post_2', 'probability' => 0.0]]]],
     'a probability that is not a number' => [['answers' => [['type' => 'predicate', 'name' => 'post_1', 'probability' => 'low']]]],
 ]);
+
+it('caches trimmed search embeddings for an hour without caching commit visibility', function (): void {
+    fakeSearch();
+    $commit = Commit::factory()->create(['embedding' => embeddingVector(0)]);
+    $query = resolve(CommitSearchQuery::class);
+
+    expect($query->get('  a query  ', null)->sole()->id)->toBe($commit->id);
+    $commit->delete();
+    expect($query->get('a query', null))->toBeEmpty();
+    Http::assertSentCount(2);
+
+    $this->travel(1)->hours();
+    expect($query->get('a query', null))->toBeEmpty();
+    Http::assertSentCount(3);
+});
+
+it('does not cache a missing query embedding as a successful search', function (): void {
+    Http::fake(['api.openai.com/v1/embeddings' => Http::sequence()
+        ->push(['data' => []])
+        ->push(embeddingsResponse([embeddingVector(0)]))]);
+    $query = resolve(CommitSearchQuery::class);
+
+    expect(fn () => $query->get('a query', null))->toThrow(EmbeddingsCountMismatchException::class);
+    expect($query->get('a query', null))->toBeEmpty();
+    Http::assertSentCount(2);
+});

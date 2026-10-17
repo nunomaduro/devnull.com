@@ -96,6 +96,12 @@ Every profile also has an Atom feed of its latest 50 top-level commits at `/@{us
 ### Maintenance
 - `composer update:requirements` - Updates the PHP and frontend dependency version constraints
 
+### Semantic commit search
+
+Commit search generates and caches query embeddings with the Laravel AI SDK, using the existing `OPENAI_API_KEY`. The provider, model, and dimensions are explicitly kept compatible with stored embeddings, so no re-embedding or database migration is needed. Query embeddings are cached for one hour; result visibility and relevance are evaluated on every search.
+
+PostgreSQL cosine ranking, visibility filters, and the existing OpenAI relevance classifier are unchanged. Batch ingestion continues through the existing OpenAI service to preserve response-index ordering and count validation. Moderation is unchanged. After installing dependencies, run `php artisan boost:update` to refresh agent guidance and the AI SDK skill (run `php artisan boost:install` first if Boost is not configured locally).
+
 ### Knowledge base embeddings
 
 After running the database migrations and configuring `OPENAI_API_KEY`, import the Markdown knowledge base:

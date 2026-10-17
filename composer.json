@@ -12,6 +12,7 @@
         "php": "^8.5.0",
         "inertiajs/inertia-laravel": "^3.5.1",
         "intervention/image": "^4.3.5",
+        "laravel/ai": "^1.2.3",
         "laravel/framework": "^13.36.0",
         "laravel/octane": "^2.22",
         "laravel/socialite": "^5.31.0",
