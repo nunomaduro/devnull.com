@@ -38,11 +38,15 @@ export function useBookmark(commit: Commit) {
             return;
         }
 
+        const next = !isSaved;
+
+        setIsSaved(next);
+
         try {
             const response = await request.submit(
-                isSaved
-                    ? BookmarkController.destroy(commit)
-                    : BookmarkController.store(commit),
+                next
+                    ? BookmarkController.store(commit)
+                    : BookmarkController.destroy(commit),
             );
 
             setIsSaved(response.is_saved);
@@ -52,6 +56,7 @@ export function useBookmark(commit: Commit) {
                 onRemoved?.(commit.id);
             }
         } catch {
+            setIsSaved(!next);
             toast.error('Could not update your saved commits. Try again.');
         }
     };
