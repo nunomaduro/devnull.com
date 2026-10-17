@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Inertia\ExceptionResponse;
 use Inertia\Inertia;
+use Laravel\Socialite\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
+use Laravel\Socialite\Two\GithubProvider;
 
 final class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +28,11 @@ final class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Socialite::extend('github-issues', fn (): AbstractProvider => Socialite::buildProvider(GithubProvider::class, config()->array('services.github'))
+            ->setScopes(['public_repo'])
+            ->enablePKCE()
+            ->redirectUrl(route('github-issue-authorization.store')));
+
         $this->bootRateLimitingDefaults();
 
         $this->bootExceptionHandling();
@@ -64,6 +72,8 @@ final class AppServiceProvider extends ServiceProvider
     private function bootRateLimitingDefaults(): void
     {
         RateLimiter::for('commit-reports', fn (Request $request): Limit => Limit::perMinute(5)->by($this->userId($request)));
+
+        RateLimiter::for('issues', fn (Request $request): Limit => Limit::perHour(5)->by($this->userId($request)));
 
         // Every sync costs four GitHub API requests, out of a shared hourly budget...
         RateLimiter::for('profile-syncs', function (Request $request): Limit {

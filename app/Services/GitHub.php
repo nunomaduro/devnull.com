@@ -11,13 +11,17 @@ final readonly class GitHub
 {
     private const int PerPage = 100;
 
-    public function request(): PendingRequest
+    public function request(?string $token = null): PendingRequest
     {
         $request = Http::baseUrl('https://api.github.com')
             ->accept('application/vnd.github+json')
             ->withHeaders(['X-GitHub-Api-Version' => '2022-11-28'])
             ->connectTimeout(3)
             ->timeout(5);
+
+        if ($token !== null) {
+            return $request->withToken($token);
+        }
 
         $clientId = config('services.github.client_id');
         $clientSecret = config('services.github.client_secret');

@@ -48,6 +48,7 @@ final class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => fn (): ?User => $request->user()?->loadCounts(),
                 'isAdmin' => $isAdmin,
+                'githubIssueCommandsEnabled' => fn (): bool => $user instanceof User && $user->hasGitHubIssueAuthorization(),
                 'log' => fn (): ?Log => $request->user()?->log,
                 'unreadNotificationsCount' => fn (): int => $user instanceof User ? resolve(NotificationGroupsQuery::class)->unreadCount($user) : 0,
                 'pasteis' => fn (): ?array => $user?->pasteis_mode ? [

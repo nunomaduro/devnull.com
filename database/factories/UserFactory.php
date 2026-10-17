@@ -48,6 +48,14 @@ final class UserFactory extends Factory
         ]);
     }
 
+    public function withGitHubIssueAuthorization(): self
+    {
+        return $this->state(fn (array $attributes): array => [
+            'github_issue_token' => 'issue-test-token',
+            'github_issue_token_expires_at' => null,
+        ]);
+    }
+
     public function withoutProfile(): self
     {
         return $this->state(fn (array $attributes): array => [
