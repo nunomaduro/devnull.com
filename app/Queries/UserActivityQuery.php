@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Queries;
 
 use App\Enums\ActivityScale;
-use App\Models\Commit;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -31,15 +30,15 @@ final readonly class UserActivityQuery
             ->visibleTo($viewer)
             ->where('created_at', '>=', $from);
 
-        $counts = $scale->isHourly()
-            ? $commits->get(['created_at'])
-                ->countBy(fn (Commit $commit): string => $commit->created_at->utc()->startOfHour()->toIso8601ZuluString())
-                ->all()
-            : $commits->selectRaw('date(created_at) as bucket, count(*) as aggregate')
-                ->groupBy('bucket')
-                ->pluck('aggregate', 'bucket')
-                ->map(fn (mixed $count): int => is_numeric($count) ? (int) $count : 0)
-                ->all();
+        $bucket = $scale->isHourly() ? "date_trunc('hour', created_at)" : 'date(created_at)';
+
+        $counts = $commits->selectRaw("{$bucket} as bucket, count(*) as aggregate")
+            ->groupBy('bucket')
+            ->pluck('aggregate', 'bucket')
+            ->mapWithKeys(fn (mixed $count, int|string $date): array => [
+                $scale->isHourly() ? CarbonImmutable::parse((string) $date, 'UTC')->toIso8601ZuluString() : $date => is_numeric($count) ? (int) $count : 0,
+            ])
+            ->all();
 
         $period = $scale->isHourly()
             ? CarbonPeriod::create($from, '1 hour', $now->startOfHour())

@@ -6,6 +6,8 @@ use App\Enums\ActivityScale;
 use App\Models\Commit;
 use App\Models\User;
 use App\Queries\UserActivityQuery;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     $this->travelTo(now()->setDate(2026, 10, 15)->setTime(12, 30));
@@ -63,6 +65,35 @@ it('counts the commits of each hour of the last 24 hours as utc instants', funct
         ->and($activity['buckets'][21])->toBe(['date' => '2026-10-15T10:00:00Z', 'count' => 0])
         ->and($activity['buckets'][23])->toBe(['date' => '2026-10-15T12:00:00Z', 'count' => 3]);
 });
+
+it('aggregates hourly activity without hydrating individual commits', function (): void {
+    $user = User::factory()->create();
+    Commit::factory()->for($user)->count(30)->create(['body' => 'An hourly commit']);
+
+    Event::fake(['eloquent.retrieved: '.Commit::class]);
+
+    $activity = resolve(UserActivityQuery::class)->get($user, null, ActivityScale::Day);
+
+    expect($activity['buckets'])->toHaveCount(24)
+        ->and($activity['buckets'][23]['count'])->toBe(30);
+
+    Event::assertNotDispatched('eloquent.retrieved: '.Commit::class);
+});
+
+it('keeps hourly buckets in utc regardless of the database timezone', function (string $timezone): void {
+    DB::select("select set_config('TimeZone', ?, true)", [$timezone]);
+    $user = User::factory()->create();
+
+    Commit::factory()->for($user)->create(['created_at' => '2026-10-14 23:59:59']);
+    Commit::factory()->for($user)->create(['created_at' => '2026-10-15 00:00:00']);
+    Commit::factory()->for($user)->create(['created_at' => '2026-10-15 00:59:59']);
+
+    $activity = resolve(UserActivityQuery::class)->get($user, null, ActivityScale::Day);
+
+    expect($activity['buckets'][10])->toBe(['date' => '2026-10-14T23:00:00Z', 'count' => 1])
+        ->and($activity['buckets'][11])->toBe(['date' => '2026-10-15T00:00:00Z', 'count' => 2])
+        ->and($activity['buckets'][12])->toBe(['date' => '2026-10-15T01:00:00Z', 'count' => 0]);
+})->with(['UTC', 'Asia/Kolkata', 'America/New_York']);
 
 it('counts the commits of each day of the last 7 days', function (): void {
     $user = User::factory()->create();
