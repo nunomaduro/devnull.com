@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { Ban } from 'lucide-react';
 import UserBlockController from '@/actions/App/Http/Controllers/UserBlockController';
 import { EmptyFeed } from '@/components/commit-feed';
+import { clearMentionSuggestionsCache } from '@/components/mention-textarea';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/user-avatar';
 import AppLayout from '@/layouts/app-layout';
@@ -44,6 +45,7 @@ export default function Unavailable({
                                             blockedUser,
                                         )}
                                         as="button"
+                                        onSuccess={clearMentionSuggestionsCache}
                                         data-test="unblock-button"
                                     >
                                         <Ban />

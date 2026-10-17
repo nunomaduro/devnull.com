@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import UserBlockController from '@/actions/App/Http/Controllers/UserBlockController';
 import UserMuteController from '@/actions/App/Http/Controllers/UserMuteController';
 import Heading from '@/components/heading';
+import { clearMentionSuggestionsCache } from '@/components/mention-textarea';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/user-avatar';
 import AppLayout from '@/layouts/app-layout';
@@ -73,6 +74,7 @@ function PeopleList({
                                 href={action.href}
                                 as="button"
                                 preserveScroll
+                                onSuccess={clearMentionSuggestionsCache}
                                 aria-label={`${action.label} @${person.username}`}
                             >
                                 {action.label}

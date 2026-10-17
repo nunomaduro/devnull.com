@@ -3,6 +3,7 @@ import { Ban, Ellipsis, Volume2, VolumeX } from 'lucide-react';
 import { useState } from 'react';
 import UserBlockController from '@/actions/App/Http/Controllers/UserBlockController';
 import UserMuteController from '@/actions/App/Http/Controllers/UserMuteController';
+import { clearMentionSuggestionsCache } from '@/components/mention-textarea';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -52,7 +53,10 @@ export function UserSafetyMenu({
                 setIsSaving(false);
                 changeOpen(false, false);
             },
-            onSuccess: () => router.flushAll(),
+            onSuccess: () => {
+                clearMentionSuggestionsCache();
+                router.flushAll();
+            },
         });
     };
 
