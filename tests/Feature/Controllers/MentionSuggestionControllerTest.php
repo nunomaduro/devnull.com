@@ -73,7 +73,7 @@ it('never suggests muted people or people across a block', function (string $ter
     $blocker = User::factory()->create(['username' => 'taylor_blocker']);
     $visible = User::factory()->create(['username' => 'taylor']);
 
-    $user->following()->attach([$muted->id, $visible->id]);
+    $user->following()->attach([$muted->id, $blocked->id, $blocker->id, $visible->id]);
     $user->muting()->attach($muted);
     $user->blocking()->attach($blocked);
     $blocker->blocking()->attach($user);

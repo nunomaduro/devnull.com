@@ -32,6 +32,7 @@ final readonly class MentionSuggestionsQuery
         if ($term === '') {
             return $user->following()
                 ->whereNotIn('users.id', $user->mutedIds())
+                ->whereNotIn('users.id', $user->idsAcrossBlocks())
                 ->orderByPivot('created_at', 'desc')
                 ->orderBy('username')
                 ->limit($limit)
