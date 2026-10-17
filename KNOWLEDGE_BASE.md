@@ -40,6 +40,8 @@ The repository defaults to database-backed queues, cache, and sessions. File sto
 
 The knowledge base is split into Markdown sections by heading and stored with vector embeddings in PostgreSQL. The repository includes a GitHub Actions workflow to refresh new or changed sections after knowledge-base changes reach production on Laravel Cloud, once its [CI credentials are configured](README.md#automatic-production-updates). Unchanged sections reuse their embeddings.
 
+An [internal semantic search query](README.md#internal-semantic-search) retrieves the nearest knowledge-base sections using Laravel AI SDK query embeddings through OpenAI and PostgreSQL cosine distance, following the same embedding approach as commit search. Results preserve source paths, heading context, and Markdown content for a future agent to use. This is retrieval infrastructure only: there is no public search endpoint, and Tom's DeepSeek bot remains planned.
+
 Stack references: [PHP dependencies](composer.json), [frontend dependencies](package.json), [database configuration](config/database.php), [setup requirements](README.md#getting-started), [queue configuration](config/queue.php), [cache configuration](config/cache.php), [session configuration](config/session.php), [storage configuration](config/filesystems.php), and [existing AI integration](app/Services/OpenAI.php). Laravel Cloud hosting is confirmed by the project team.
 
 ## Lore

@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read list<string> $headings
  * @property-read string $content
  * @property-read list<float> $embedding
+ * @property-read float|null $distance
  * @property-read CarbonInterface $created_at
  * @property-read CarbonInterface $updated_at
  */

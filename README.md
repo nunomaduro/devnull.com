@@ -116,6 +116,20 @@ Each non-empty section becomes a row in `knowledge_base_sections`, storing its s
 
 Rerun the command after editing a file. It uses the existing OpenAI service to embed only new or changed sections, reusing vectors when both content and heading hierarchy are unchanged, even if a section moved. It atomically updates or inserts rows and removes sections no longer present. Other files are left alone; a failed import preserves the previous data. The reported count is the number of newly generated embeddings. Unchanged imports make no paid requests. Keep sections small enough for the embedding model's input limit; there is no additional size-based splitting. This prepares knowledge for retrieval without implementing Tom's planned DeepSeek bot.
 
+#### Internal semantic search
+
+Inject `App\Queries\KnowledgeBaseSearchQuery` into an internal caller, such as a future agent tool:
+
+```php
+$sections = $knowledgeBaseSearchQuery->get('Who is Tom?', limit: 5);
+```
+
+The query uses the Laravel AI SDK to generate query embeddings, with the same OpenAI provider, model, and dimensions as ingestion and commit search. It searches all imported sources using PostgreSQL cosine distance and returns a collection of sections, closest first, with `id`, `source`, `position`, `headings`, Markdown `content`, and a numeric `distance` (lower is closer). Ties sort by source and position. Embedding vectors are not included in the results.
+
+The default limit is five. Blank queries and nonpositive limits return no results without calling OpenAI; short terms such as `AI` are supported. The SDK caches trimmed query embeddings for an hour and shares compatible cached queries with commit search, but section results are read fresh so imports immediately affect retrieval. Provider errors propagate to the caller rather than looking like an empty knowledge base.
+
+These are nearest matches, not a guarantee of relevance or a calibrated confidence score. There is no similarity cutoff or post-specific relevance classifier; the future agent must assess whether the returned sections answer the question. This adds no public endpoint, agent tool registration, or DeepSeek integration.
+
 #### Automatic production updates
 
 The **Knowledge base embeddings** GitHub Actions workflow runs in the upstream `nunomaduro/dev-null.sh` repository when a push to `production` changes `KNOWLEDGE_BASE.md` (including a merged pull request). Changes to the workflow or its script also trigger it. It does not run on pull requests or forks.

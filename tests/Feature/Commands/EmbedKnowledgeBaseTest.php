@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\KnowledgeBaseSection;
+use App\Queries\KnowledgeBaseSearchQuery;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\Request;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
-    config(['services.openai.key' => 'sk-test']);
+    config(['services.openai.key' => 'sk-test', 'ai.providers.openai.key' => 'sk-test']);
 
     $disk = Storage::fake('local');
     $this->source = Str::after($disk->path('knowledge.md'), base_path().'/');
@@ -20,7 +21,9 @@ beforeEach(function (): void {
 
 it('stores sections and their vectors with heading context and can retrieve the nearest section', function (): void {
     Storage::disk('local')->put('knowledge.md', "# Knowledge base\n\n## Lore\n\n### Tom\nA fictional profile.\n\n### Pastéis\nPortuguese pastries.");
-    Http::fake(['api.openai.com/v1/embeddings' => Http::response(embeddingsResponse([embeddingVector(2), embeddingVector(7)]))]);
+    Http::fake(['api.openai.com/v1/embeddings' => Http::sequence()
+        ->push(embeddingsResponse([embeddingVector(2), embeddingVector(7)]))
+        ->push(embeddingsResponse([embeddingVector(7)]))]);
 
     $this->artisan('knowledge-base:embed', ['source' => $this->source])
         ->expectsOutputToContain('Embedded 2 knowledge base sections')
@@ -38,7 +41,7 @@ it('stores sections and their vectors with heading context and can retrieve the 
         ->content->toBe('Portuguese pastries.')
         ->embedding->toBe(embeddingVector(7));
 
-    expect(KnowledgeBaseSection::query()->whereVectorSimilarTo('embedding', embeddingVector(7), minSimilarity: 0.9)->sole()->id)
+    expect(resolve(KnowledgeBaseSearchQuery::class)->get('Portuguese pastry', limit: 1)->sole()->id)
         ->toBe($sections[1]->id);
 
     Http::assertSent(fn (Request $request): bool => $request['input'] === [
