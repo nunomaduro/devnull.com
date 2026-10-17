@@ -56,11 +56,33 @@ export function CommitPastelButton({
 
         busy.current = true;
         let errorShown = false;
+        let exhausted = false;
+
+        setCount((current) => current + 1);
+        refreshSharedState(
+            new Map([
+                [
+                    `pasteis-allowance:${userId}:${day}`,
+                    Math.max(0, remaining - 1),
+                ],
+            ]),
+        );
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            emoji.current
+                ?.getAnimations()
+                .forEach((animation) => animation.cancel());
+            emoji.current?.animate(
+                { transform: ['scale(1)', 'scale(1.25)', 'scale(1)'] },
+                { duration: 300, easing: 'ease-out' },
+            );
+        }
 
         try {
             const response = await request.submit(store(commit), {
                 onError: () => {
                     errorShown = true;
+                    exhausted = true;
+                    setCount((current) => Math.max(0, current - 1));
                     refreshSharedState(
                         new Map([[`pasteis-allowance:${userId}:${day}`, 0]]),
                     );
@@ -73,17 +95,6 @@ export function CommitPastelButton({
             });
 
             setCount((current) => Math.max(current, response.pasteis_count));
-            if (
-                !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-            ) {
-                emoji.current
-                    ?.getAnimations()
-                    .forEach((animation) => animation.cancel());
-                emoji.current?.animate(
-                    { transform: ['scale(1)', 'scale(1.25)', 'scale(1)'] },
-                    { duration: 300, easing: 'ease-out' },
-                );
-            }
             refreshSharedState(
                 new Map([
                     [
@@ -105,6 +116,15 @@ export function CommitPastelButton({
                 toast(exhaustedMessage, { id: 'pasteis-exhausted' });
             }
         } catch {
+            if (!exhausted) {
+                setCount((current) => Math.max(0, current - 1));
+                refreshSharedState(
+                    new Map([
+                        [`pasteis-allowance:${userId}:${day}`, remaining],
+                    ]),
+                );
+            }
+
             if (!errorShown) {
                 toast.error('Could not award a pastel. Please try again.');
             }
